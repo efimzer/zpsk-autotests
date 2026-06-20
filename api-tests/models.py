@@ -422,7 +422,15 @@ class CallHistoryChat(BaseModel):
 class CallHistoryItem(BaseModel):
     id: UUID
     chatId: UUID
-    status: Literal["RINGING", "IN_PROGRESS", "COMPLETED", "DECLINED", "MISSED", "CANCELED", "FAILED"]
+    status: Literal[
+        "RINGING",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "DECLINED",
+        "MISSED",
+        "CANCELED",
+        "FAILED",
+    ]
     direction: Literal["incoming", "outgoing"]
     createdAt: datetime
     startedAt: datetime | None
@@ -460,7 +468,9 @@ class UiFlowLogRequest(BaseModel):
     href: str | None = None
     visibilityState: str | None = None
     reportedClientMode: Literal["pwa", "browser"] | None = None
-    reportedClientPlatform: Literal["ios", "android", "mac", "desktop", "unknown"] | None = None
+    reportedClientPlatform: (
+        Literal["ios", "android", "mac", "desktop", "unknown"] | None
+    ) = None
     ts: datetime | None = None
 
 

@@ -164,8 +164,8 @@ def created_direct_chat(authorized_api_client):
 
 
 @pytest.fixture
-def created_direct_chat_with_message(created_direct_chat, authorized_api_client):
-    message_text = f"AUTOTEST_{uuid4().hex}"
+def direct_chat_with_seed_message(created_direct_chat, authorized_api_client):
+    message_text = f"AUTOTEST{uuid4().hex[:8]}"
 
     with allure.step("API: отправить уникальное сообщение"):
         message_response = authorized_api_client.send_message(
@@ -178,8 +178,10 @@ def created_direct_chat_with_message(created_direct_chat, authorized_api_client)
         f"Факт: HTTP {message_response.status_code}, тело ответа: {message_response.text}"
     )
 
-    created_direct_chat["search_message_text"] = message_text
-    return created_direct_chat
+    return {
+        "chat": created_direct_chat,
+        "message_text": message_text,
+    }
 
 
 @pytest.fixture

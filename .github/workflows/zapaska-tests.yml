@@ -79,7 +79,6 @@ jobs:
       GROUP_PARTICIPANTS_PHONES: ${{ secrets.GROUP_PARTICIPANTS_PHONES }}
       GROUP_ADD_MEMBER_PHONE: ${{ secrets.GROUP_ADD_MEMBER_PHONE }}
       GROUP_CHAT_TITLE: Autotest group chat
-      UPDATE_CHAT_TITLE: Autotest renamed chat
       OPEN_REPORT: "false"
     steps:
       - uses: actions/checkout@v4
@@ -120,7 +119,6 @@ jobs:
           GROUP_PARTICIPANTS_PHONES=${GROUP_PARTICIPANTS_PHONES}
           GROUP_ADD_MEMBER_PHONE=${GROUP_ADD_MEMBER_PHONE}
           GROUP_CHAT_TITLE=${GROUP_CHAT_TITLE}
-          UPDATE_CHAT_TITLE=${UPDATE_CHAT_TITLE}
           EOF
 
       - name: Run API tests

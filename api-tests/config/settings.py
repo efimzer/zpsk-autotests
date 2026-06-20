@@ -16,18 +16,15 @@ PHONE_PARTICIPANT_2 = os.getenv("PHONE_PARTICIPANT_2")
 PHONE_PARTICIPANT_3 = os.getenv("PHONE_PARTICIPANT_3")
 GROUP_PARTICIPANTS_PHONES = os.getenv("GROUP_PARTICIPANTS_PHONES", "")
 GROUP_PARTICIPANTS_PHONES = [
-    phone.strip()
-    for phone in GROUP_PARTICIPANTS_PHONES.split(",")
-    if phone.strip()
-    ]
-GROUP_ADD_MEMBER_PHONE = os.getenv("GROUP_ADD_MEMBER_PHONE") or PHONE_PARTICIPANT_3 or PHONE_PARTICIPANT_2
+    phone.strip() for phone in GROUP_PARTICIPANTS_PHONES.split(",") if phone.strip()
+]
+GROUP_ADD_MEMBER_PHONE = (
+    os.getenv("GROUP_ADD_MEMBER_PHONE") or PHONE_PARTICIPANT_3 or PHONE_PARTICIPANT_2
+)
 GROUP_INITIAL_PARTICIPANTS_PHONES = [
-    phone
-    for phone in GROUP_PARTICIPANTS_PHONES
-    if phone != GROUP_ADD_MEMBER_PHONE
+    phone for phone in GROUP_PARTICIPANTS_PHONES if phone != GROUP_ADD_MEMBER_PHONE
 ]
 GROUP_CHAT_TITLE = os.getenv("GROUP_CHAT_TITLE", "Групповой чат")
-UPDATE_CHAT_TITLE = os.getenv("UPDATE_CHAT_TITLE", "Новое имя чата")
 
 if not PHONE:
     raise ValueError("Не задан телефон автора")

@@ -51,10 +51,16 @@ def build_message():
 
     api_result = os.getenv("API_RESULT", "unknown")
     ui_result = os.getenv("UI_RESULT", "unknown")
-    overall = "success" if api_result in {"success", "skipped"} and ui_result in {
-        "success",
-        "skipped",
-    } else "failed"
+    overall = (
+        "success"
+        if api_result in {"success", "skipped"}
+        and ui_result
+        in {
+            "success",
+            "skipped",
+        }
+        else "failed"
+    )
 
     lines = [
         "Zapaska autotests",
