@@ -1,6 +1,6 @@
-# Zapaska Autotests
+# Demo autotests for Webmessenger
 
-Demo project with API and UI autotests for Webmessenger.
+Demo project with API and UI autotests.
 
 The repository shows a basic QA automation setup: pytest, API fixtures,
 Playwright UI tests, Allure reports, and GitHub Actions.
