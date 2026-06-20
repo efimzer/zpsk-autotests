@@ -1,0 +1,255 @@
+name: Zapaska Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Test suite to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - api
+          - ui
+      browser:
+        description: "Browser for UI tests"
+        required: true
+        default: "chromium"
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+  schedule:
+    # 10:00 MSK = 07:00 UTC. The guard job below runs tests every other day.
+    - cron: "0 7 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zapaska-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  schedule_guard:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.every_other_day.outputs.should_run }}
+    steps:
+      - name: Check every other day schedule
+        id: every_other_day
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run: tests will be executed."
+            exit 0
+          fi
+
+          days_since_epoch=$(( $(date -u +%s) / 86400 ))
+          if [ $(( days_since_epoch % 2 )) -eq 0 ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Scheduled run: tests will be executed."
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Scheduled run skipped: every other day guard."
+          fi
+
+  api:
+    needs: schedule_guard
+    if: >
+      needs.schedule_guard.outputs.should_run == 'true' &&
+      (
+        github.event_name == 'schedule' ||
+        github.event.inputs.suite == 'all' ||
+        github.event.inputs.suite == 'api'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      PHONE: ${{ secrets.PHONE }}
+      CODE: ${{ secrets.CODE }}
+      NAME: ${{ secrets.NAME }}
+      PHONE_PARTICIPANT: ${{ secrets.PHONE_PARTICIPANT }}
+      PHONE_PARTICIPANT_2: ${{ secrets.PHONE_PARTICIPANT_2 }}
+      PHONE_PARTICIPANT_3: ${{ secrets.PHONE_PARTICIPANT_3 }}
+      GROUP_PARTICIPANTS_PHONES: ${{ secrets.GROUP_PARTICIPANTS_PHONES }}
+      GROUP_ADD_MEMBER_PHONE: ${{ secrets.GROUP_ADD_MEMBER_PHONE }}
+      GROUP_CHAT_TITLE: Autotest group chat
+      UPDATE_CHAT_TITLE: Autotest renamed chat
+      OPEN_REPORT: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Restore Allure history
+        uses: actions/cache/restore@v4
+        with:
+          path: api-tests/.allure
+          key: api-allure-history-${{ github.run_id }}
+          restore-keys: |
+            api-allure-history-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api-tests/requirements.txt
+          npm install --no-save allure@3.11.0
+
+      - name: Create API env file
+        shell: bash
+        run: |
+          cat > api-tests/.env <<EOF
+          BASE_URL=${BASE_URL}
+          PHONE=${PHONE}
+          CODE=${CODE}
+          NAME=${NAME}
+          PHONE_PARTICIPANT=${PHONE_PARTICIPANT}
+          PHONE_PARTICIPANT_2=${PHONE_PARTICIPANT_2}
+          PHONE_PARTICIPANT_3=${PHONE_PARTICIPANT_3}
+          GROUP_PARTICIPANTS_PHONES=${GROUP_PARTICIPANTS_PHONES}
+          GROUP_ADD_MEMBER_PHONE=${GROUP_ADD_MEMBER_PHONE}
+          GROUP_CHAT_TITLE=${GROUP_CHAT_TITLE}
+          UPDATE_CHAT_TITLE=${UPDATE_CHAT_TITLE}
+          EOF
+
+      - name: Run API tests
+        run: |
+          cd api-tests
+          ./api
+
+      - name: Save Allure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: api-tests/.allure
+          key: api-allure-history-${{ github.run_id }}
+
+      - name: Upload API report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-allure-report
+          path: |
+            api-tests/allure-report
+            api-tests/allure-results
+            api-tests/.allure/history.jsonl
+          if-no-files-found: ignore
+
+  ui:
+    needs: schedule_guard
+    if: >
+      needs.schedule_guard.outputs.should_run == 'true' &&
+      (
+        github.event_name == 'schedule' ||
+        github.event.inputs.suite == 'all' ||
+        github.event.inputs.suite == 'ui'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      PHONE: ${{ secrets.PHONE }}
+      CODE: ${{ secrets.CODE }}
+      PHONE_PARTICIPANT: ${{ secrets.PHONE_PARTICIPANT }}
+      BROWSER: ${{ github.event.inputs.browser || 'chromium' }}
+      OPEN_REPORT: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Restore Allure history
+        uses: actions/cache/restore@v4
+        with:
+          path: ui-tests/.allure
+          key: ui-allure-history-${{ github.run_id }}
+          restore-keys: |
+            ui-allure-history-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ui-tests/requirements.txt
+          python -m playwright install --with-deps "$BROWSER"
+          npm install --no-save allure@3.11.0
+
+      - name: Create UI env file
+        shell: bash
+        run: |
+          cat > ui-tests/.env <<EOF
+          BASE_URL=${BASE_URL}
+          PHONE=${PHONE}
+          CODE=${CODE}
+          PHONE_PARTICIPANT=${PHONE_PARTICIPANT}
+          EOF
+
+      - name: Run UI tests
+        run: |
+          cd ui-tests
+          PYTEST_ARGS="--browser $BROWSER" ./ui
+
+      - name: Save Allure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ui-tests/.allure
+          key: ui-allure-history-${{ github.run_id }}
+
+      - name: Upload UI report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-allure-report
+          path: |
+            ui-tests/allure-report
+            ui-tests/allure-results
+            ui-tests/artifacts
+            ui-tests/.allure/history.jsonl
+          if-no-files-found: ignore
+
+  notify:
+    needs:
+      - schedule_guard
+      - api
+      - ui
+    if: >
+      always() &&
+      needs.schedule_guard.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      ZAPASKA_NOTIFY_BOT_PHONE: ${{ secrets.ZAPASKA_NOTIFY_BOT_PHONE }}
+      ZAPASKA_NOTIFY_BOT_CODE: ${{ secrets.ZAPASKA_NOTIFY_BOT_CODE }}
+      ZAPASKA_NOTIFY_RECIPIENT_PHONE: ${{ secrets.ZAPASKA_NOTIFY_RECIPIENT_PHONE }}
+      API_RESULT: ${{ needs.api.result }}
+      UI_RESULT: ${{ needs.ui.result }}
+      SUITE: ${{ github.event.inputs.suite || 'all' }}
+      BROWSER: ${{ github.event.inputs.browser || 'chromium' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Send Zapaska notification
+        continue-on-error: true
+        run: python scripts/notify_zapaska.py

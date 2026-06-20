@@ -1,0 +1,10 @@
+.DS_Store
+.env
+**/.env
+**/.pytest_cache/
+**/__pycache__/
+**/allure-results/
+**/allure-report/
+**/artifacts/
+**/.allure/
+**/review.txt
