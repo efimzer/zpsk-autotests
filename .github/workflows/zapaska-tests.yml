@@ -224,11 +224,121 @@ jobs:
             ui-tests/.allure/history.jsonl
           if-no-files-found: ignore
 
+  pages:
+    needs:
+      - schedule_guard
+      - api
+      - ui
+    if: >
+      always() &&
+      needs.schedule_guard.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+      api_report_url: ${{ steps.deployment.outputs.page_url }}api/
+      ui_report_url: ${{ steps.deployment.outputs.page_url }}ui/
+    steps:
+      - name: Download API report artifact
+        if: needs.api.result != 'skipped'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: api-allure-report
+          path: downloaded/api
+
+      - name: Download UI report artifact
+        if: needs.ui.result != 'skipped'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-allure-report
+          path: downloaded/ui
+
+      - name: Build GitHub Pages content
+        shell: bash
+        run: |
+          mkdir -p public/api public/ui
+
+          copy_report() {
+            local source_root="$1"
+            local target_dir="$2"
+            local title="$3"
+
+            if [ -d "$source_root/allure-report" ]; then
+              cp -R "$source_root/allure-report/." "$target_dir/"
+              return
+            fi
+
+            if [ -d "$source_root/api-tests/allure-report" ]; then
+              cp -R "$source_root/api-tests/allure-report/." "$target_dir/"
+              return
+            fi
+
+            if [ -d "$source_root/ui-tests/allure-report" ]; then
+              cp -R "$source_root/ui-tests/allure-report/." "$target_dir/"
+              return
+            fi
+
+            cat > "$target_dir/index.html" <<EOF
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <title>${title}</title>
+            </head>
+            <body>
+              <h1>${title}</h1>
+              <p>No report was generated for this run.</p>
+            </body>
+          </html>
+          EOF
+          }
+
+          copy_report "downloaded/api" "public/api" "Zapaska API report"
+          copy_report "downloaded/ui" "public/ui" "Zapaska UI report"
+
+          cat > public/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <title>Zapaska Autotest Reports</title>
+            </head>
+            <body>
+              <h1>Zapaska Autotest Reports</h1>
+              <ul>
+                <li><a href="./api/">API report</a></li>
+                <li><a href="./ui/">UI report</a></li>
+              </ul>
+            </body>
+          </html>
+          EOF
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   notify:
     needs:
       - schedule_guard
       - api
       - ui
+      - pages
     if: >
       always() &&
       needs.schedule_guard.outputs.should_run == 'true'
@@ -241,6 +351,9 @@ jobs:
       ZAPASKA_NOTIFY_RECIPIENT_PHONE: ${{ secrets.ZAPASKA_NOTIFY_RECIPIENT_PHONE }}
       API_RESULT: ${{ needs.api.result }}
       UI_RESULT: ${{ needs.ui.result }}
+      PAGES_RESULT: ${{ needs.pages.result }}
+      API_REPORT_URL: ${{ needs.pages.outputs.api_report_url }}
+      UI_REPORT_URL: ${{ needs.pages.outputs.ui_report_url }}
       SUITE: ${{ github.event.inputs.suite || 'all' }}
       BROWSER: ${{ github.event.inputs.browser || 'chromium' }}
     steps:

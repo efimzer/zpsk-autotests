@@ -61,11 +61,21 @@ def build_message():
         f"Status: {overall}",
         f"API: {api_result}",
         f"UI: {ui_result}",
+        f"Pages: {os.getenv('PAGES_RESULT', 'unknown')}",
         f"Suite: {os.getenv('SUITE', 'all')}",
         f"Browser: {os.getenv('BROWSER', 'chromium')}",
         f"Event: {os.getenv('GITHUB_EVENT_NAME', 'unknown')}",
         f"Branch: {os.getenv('GITHUB_REF_NAME', 'unknown')}",
     ]
+
+    api_report_url = os.getenv("API_REPORT_URL")
+    ui_report_url = os.getenv("UI_REPORT_URL")
+
+    if api_report_url:
+        lines.append(f"API report: {api_report_url}")
+
+    if ui_report_url:
+        lines.append(f"UI report: {ui_report_url}")
 
     if run_url:
         lines.append(f"Run: {run_url}")
