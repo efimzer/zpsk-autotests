@@ -157,8 +157,8 @@ jobs:
     timeout-minutes: 25
     env:
       BASE_URL: ${{ secrets.TEST_BASE_URL }}
-      PHONE: ${{ secrets.UI_PHONE }}
-      CODE: ${{ secrets.UI_CODE }}
+      PHONE: ${{ secrets.PHONE }}
+      CODE: ${{ secrets.CODE }}
       UI_PHONE_PARTICIPANT: ${{ secrets.UI_PHONE_PARTICIPANT }}
       BROWSER: ${{ github.event.inputs.browser || 'chromium' }}
       OPEN_REPORT: "false"
