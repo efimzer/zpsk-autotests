@@ -11,7 +11,7 @@ load_dotenv(ENV_PATH)
 BASE_URL = os.getenv("BASE_URL", "https://stage.zapaska.online")
 PHONE = os.getenv("PHONE")
 CODE = os.getenv("CODE")
-PHONE_PARTICIPANT = os.getenv("PHONE_PARTICIPANT")
+UI_PHONE_PARTICIPANT = os.getenv("UI_PHONE_PARTICIPANT")
 
 if not PHONE:
     raise ValueError("Не задана переменная окружения PHONE")
@@ -19,5 +19,5 @@ if not PHONE:
 if not CODE:
     raise ValueError("Не задана переменная окружения CODE")
 
-if not PHONE_PARTICIPANT:
-    raise ValueError("Не задана переменная окружения PHONE_PARTICIPANT")
+if not UI_PHONE_PARTICIPANT:
+    raise ValueError("Не задана переменная окружения UI_PHONE_PARTICIPANT")

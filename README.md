@@ -46,6 +46,20 @@ The workflow supports manual runs and scheduled runs. API and UI suites run as
 separate jobs. Reports are generated with Allure and can be published to GitHub
 Pages.
 
+Tests and notifications use separate environments:
+
+```text
+TEST_BASE_URL              test environment for API/UI checks
+ZAPASKA_NOTIFY_BASE_URL    production environment for report notifications
+```
+
+API and UI jobs use separate test accounts:
+
+```text
+PHONE, CODE, PHONE_PARTICIPANT
+UI_PHONE, UI_CODE, UI_PHONE_PARTICIPANT
+```
+
 ## Reports
 
 Local reports are generated in:

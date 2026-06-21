@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      BASE_URL: ${{ secrets.BASE_URL }}
+      BASE_URL: ${{ secrets.TEST_BASE_URL }}
       PHONE: ${{ secrets.PHONE }}
       CODE: ${{ secrets.CODE }}
       NAME: ${{ secrets.NAME }}
@@ -156,10 +156,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      BASE_URL: ${{ secrets.BASE_URL }}
-      PHONE: ${{ secrets.PHONE }}
-      CODE: ${{ secrets.CODE }}
-      PHONE_PARTICIPANT: ${{ secrets.PHONE_PARTICIPANT }}
+      BASE_URL: ${{ secrets.TEST_BASE_URL }}
+      PHONE: ${{ secrets.UI_PHONE }}
+      CODE: ${{ secrets.UI_CODE }}
+      UI_PHONE_PARTICIPANT: ${{ secrets.UI_PHONE_PARTICIPANT }}
       BROWSER: ${{ github.event.inputs.browser || 'chromium' }}
       OPEN_REPORT: "false"
     steps:
@@ -195,7 +195,7 @@ jobs:
           BASE_URL=${BASE_URL}
           PHONE=${PHONE}
           CODE=${CODE}
-          PHONE_PARTICIPANT=${PHONE_PARTICIPANT}
+          UI_PHONE_PARTICIPANT=${UI_PHONE_PARTICIPANT}
           EOF
 
       - name: Run UI tests
@@ -343,7 +343,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      BASE_URL: ${{ secrets.BASE_URL }}
+      ZAPASKA_NOTIFY_BASE_URL: ${{ secrets.ZAPASKA_NOTIFY_BASE_URL }}
       ZAPASKA_NOTIFY_BOT_PHONE: ${{ secrets.ZAPASKA_NOTIFY_BOT_PHONE }}
       ZAPASKA_NOTIFY_BOT_CODE: ${{ secrets.ZAPASKA_NOTIFY_BOT_CODE }}
       ZAPASKA_NOTIFY_RECIPIENT_PHONE: ${{ secrets.ZAPASKA_NOTIFY_RECIPIENT_PHONE }}

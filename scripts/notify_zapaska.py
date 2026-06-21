@@ -93,7 +93,7 @@ missing = []
 
 
 def main():
-    base_url = required_env("BASE_URL")
+    base_url = required_env("ZAPASKA_NOTIFY_BASE_URL")
     bot_phone = required_env("ZAPASKA_NOTIFY_BOT_PHONE")
     bot_code = required_env("ZAPASKA_NOTIFY_BOT_CODE")
     recipient_phone = required_env("ZAPASKA_NOTIFY_RECIPIENT_PHONE")

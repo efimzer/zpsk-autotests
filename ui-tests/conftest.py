@@ -6,7 +6,7 @@ import pytest
 from playwright.sync_api import Error as PlaywrightError, expect
 
 from api.api_client import ApiClient
-from utils.settings import BASE_URL, CODE, PHONE, PHONE_PARTICIPANT
+from utils.settings import BASE_URL, CODE, PHONE, UI_PHONE_PARTICIPANT
 
 
 ATTACHMENT_TYPES = {
@@ -90,6 +90,14 @@ def desktop_page(page):
     return page
 
 
+@pytest.fixture(scope="session")
+def browser_context_args(browser_context_args):
+    return {
+        **browser_context_args,
+        "service_workers": "block",
+    }
+
+
 @pytest.fixture
 def api_client():
     return ApiClient(BASE_URL)
@@ -138,10 +146,10 @@ def add_api_cookies_to_context(context, api_client):
 
 @pytest.fixture
 def created_direct_chat(authorized_api_client):
-    assert PHONE_PARTICIPANT, "Не задана переменная окружения PHONE_PARTICIPANT"
+    assert UI_PHONE_PARTICIPANT, "Не задана переменная окружения UI_PHONE_PARTICIPANT"
 
     with allure.step("API: создать direct-чат для UI-теста"):
-        response = authorized_api_client.create_direct_chat(PHONE_PARTICIPANT)
+        response = authorized_api_client.create_direct_chat(UI_PHONE_PARTICIPANT)
 
     assert response.status_code == 200, (
         f"Ожидание: HTTP 200 при создании direct-чата | "
@@ -166,6 +174,19 @@ def created_direct_chat(authorized_api_client):
 @pytest.fixture
 def direct_chat_with_seed_message(created_direct_chat, authorized_api_client):
     message_text = f"AUTOTEST{uuid4().hex[:8]}"
+    chat_member = next(
+        (
+            member
+            for member in created_direct_chat["members"]
+            if member["phone"] == UI_PHONE_PARTICIPANT
+        ),
+        None,
+    )
+
+    assert chat_member, (
+        f"Ожидание: участник {UI_PHONE_PARTICIPANT} есть в direct-чате | "
+        f"Факт: members={created_direct_chat['members']}"
+    )
 
     with allure.step("API: отправить уникальное сообщение"):
         message_response = authorized_api_client.send_message(
@@ -180,6 +201,7 @@ def direct_chat_with_seed_message(created_direct_chat, authorized_api_client):
 
     return {
         "chat": created_direct_chat,
+        "chat_name": chat_member["name"],
         "message_text": message_text,
     }
 

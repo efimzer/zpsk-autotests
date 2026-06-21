@@ -1,12 +1,31 @@
-import re
-
 import allure
 import pytest
 from playwright.sync_api import expect
 
 
-def find_chat_by_message_search(page, message_text):
+def wait_for_chat_in_sidebar(page, text):
+    chat_item = page.locator("button.chat-item").filter(has_text=text)
+    last_error = None
+
+    for _ in range(4):
+        try:
+            expect(chat_item).to_have_count(1, timeout=5000)
+            return chat_item
+        except AssertionError as error:
+            last_error = error
+            page.reload()
+            expect(page.get_by_role("navigation", name="Навигация")).to_be_visible()
+
+    raise last_error
+
+
+def fill_global_search(page, text):
     search_input = page.get_by_role("textbox", name="Поиск", exact=True)
+    expect(search_input).to_be_visible()
+    search_input.fill(text)
+
+
+def find_chat_by_message_search(page, message_text):
     message_results = page.locator("aside.sidebar div.chat-list").filter(
         has_text="ПО СООБЩЕНИЯМ"
     )
@@ -14,8 +33,7 @@ def find_chat_by_message_search(page, message_text):
     last_error = None
 
     for _ in range(4):
-        search_input.fill("")
-        search_input.fill(message_text)
+        fill_global_search(page, message_text)
 
         try:
             expect(found_chat).to_have_count(1, timeout=5000)
@@ -55,15 +73,13 @@ def test_global_search_finds_chat_by_name(
     direct_chat_with_seed_message, authorized_desktop_page
 ):
     page = authorized_desktop_page
-    chat_name = direct_chat_with_seed_message["chat"]["members"][0]["name"]
+    chat_name = direct_chat_with_seed_message["chat_name"]
+    message_text = direct_chat_with_seed_message["message_text"]
 
     with allure.step("Поиск созданного чата"):
-        search_input = page.get_by_role("textbox", name="Поиск", exact=True)
-        search_input.fill(chat_name)
-        found_chat = page.get_by_role(
-            "button",
-            name=re.compile(rf"^{re.escape(chat_name)}"),
-        )
+        wait_for_chat_in_sidebar(page, message_text)
+        fill_global_search(page, chat_name)
+        found_chat = page.locator("button.chat-item").filter(has_text=chat_name)
 
         expect(found_chat).to_have_count(1)
         expect(found_chat).to_contain_text(chat_name)
@@ -103,9 +119,7 @@ def test_global_search_finds_chat_by_message(
     message_text = direct_chat_with_seed_message["message_text"]
 
     with allure.step("Найти чат по тексту сообщения через глобальный поиск"):
-        chat_item = page.locator("button.chat-item").filter(has_text=message_text)
-        expect(chat_item).to_have_count(1)
-
+        wait_for_chat_in_sidebar(page, message_text)
         found_chat = find_chat_by_message_search(page, message_text)
 
     with allure.step("Открыть найденный чат"):
